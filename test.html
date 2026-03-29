@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudyBuddy Diagnóstico</title>
+<style>
+  body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; font-size: 13px; }
+  h2 { color: #4cc9f0; }
+  .ok  { color: #10B981; }
+  .err { color: #EF4444; }
+  .warn { color: #F59E0B; }
+  pre { background: #0f0f23; padding: 12px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; }
+  button { background: #4F46E5; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; margin: 6px 4px; font-size: 13px; }
+</style>
+</head>
+<body>
+<h2>🦜 StudyBuddy — Diagnóstico</h2>
+<pre id="out">Analizando...</pre>
+<button onclick="goLogin()">→ Forzar Login</button>
+<button onclick="clearSB()">🗑 Limpiar sesión SB</button>
+<button onclick="location.href='./index.html'">→ Ir a la app</button>
+
+<script>
+const log = []
+const SB_KEYS = ['sb_eng_session','sb_eng_teacher','sb_eng_cloud_progress','sb_sync_queue','sb_progress_v2','sb_lang']
+
+function run() {
+  // 1. LocalStorage keys
+  log.push('=== LocalStorage ===')
+  for(let i=0; i<localStorage.length; i++){
+    const k = localStorage.key(i)
+    const v = localStorage.getItem(k)
+    const tag = SB_KEYS.includes(k) ? '[SB]' : '[OTHER]'
+    log.push(`${tag} ${k} = ${v?.substring(0,80)}`)
+  }
+  if(localStorage.length === 0) log.push('(vacío)')
+
+  // 2. Service Workers
+  log.push('\n=== Service Workers ===')
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      if(regs.length === 0){
+        log.push('Ninguno registrado')
+      } else {
+        regs.forEach(r => log.push(`SW: ${r.scope} state=${r.active?.state}`))
+      }
+      render()
+    })
+  } else {
+    log.push('SW no soportado')
+  }
+
+  // 3. Caches
+  log.push('\n=== Caches ===')
+  if('caches' in window){
+    caches.keys().then(keys => {
+      keys.forEach(k => log.push(`Cache: ${k}`))
+      if(keys.length === 0) log.push('Ninguno')
+      render()
+    })
+  } else {
+    log.push('Cache API no disponible')
+  }
+
+  // 4. Network
+  log.push('\n=== Red ===')
+  log.push(`Online: ${navigator.onLine}`)
+  log.push(`UserAgent: ${navigator.userAgent.substring(0,80)}`)
+
+  render()
+}
+
+function render() {
+  document.getElementById('out').textContent = log.join('\n')
+}
+
+function clearSB() {
+  SB_KEYS.forEach(k => localStorage.removeItem(k))
+  log.push('\n✅ Claves SB eliminadas')
+  render()
+}
+
+function goLogin() {
+  clearSB()
+  setTimeout(() => location.href = './index.html', 300)
+}
+
+run()
+</script>
+</body>
+</html>
